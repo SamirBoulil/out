@@ -1,0 +1,33 @@
+{
+  "users": {
+    "slack_uid_1": {
+      "name": "JM",
+      "current_question": null,
+      "points": "0"
+    },
+    "slack_uid_2": {
+      "name": "Samir",
+      "current_question": 666,
+      "points": "12"
+    }
+  },
+  "questions": {
+    "firebase_qid": {
+      "slackid": 111,
+      "question": "Once upon a time at Akeneo, i threw 10 people in the pond.",
+      "clues": {
+        "1": "A man",
+        "2": "Over 40",
+        "3": "Have a pet snake"
+      },
+      "description": "At the end of the worldcup seimi-finals, i was so happy France win that i gone into the pond and i pull my colleagues with me."
+    }
+  },
+  "progress": {
+    "firebase_id": {
+      "slack_uid": "XXXXXXX",
+      "firebase_qid": "YYYYYYYYY",
+      "used_clues": 0
+    }
+  }
+}
