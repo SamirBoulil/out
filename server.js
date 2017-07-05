@@ -7,6 +7,21 @@ const ConvoStore = require('slapp-convo-beepboop');
 const Context = require('slapp-context-beepboop');
 const ApiHelper = require('./ApiHelper');
 
+// use `PORT` env var on Beep Boop - default to 3000 locally
+var port = process.env.PORT || 3000
+
+var slapp = Slapp({
+  // Beep Boop sets the SLACK_VERIFY_TOKEN env var
+  verify_token: process.env.SLACK_VERIFY_TOKEN,
+  convo_store: ConvoStore(),
+  context: Context()
+})
+
+// enable debugging
+require('beepboop-slapp-presence-polyfill')(slapp, {
+  debug: true
+})
+
 // Start
 slapp.message('^.start', ['direct_message'], (msg) => {
   ApiHelper.isPlayerRegistered(msg.meta.user_id)
@@ -45,7 +60,7 @@ slapp.message('^.start', ['direct_message'], (msg) => {
 })
 
 slapp.action('register_callback', 'register_answer', (msg, value) => {
-  var registerAnswer = 'Alright, then come back to me when you are ready!;');
+  var registerAnswer = 'Alright, then come back to me when you are ready!;';
   if (value === 'yes') {
     registerAnswer = 'Awesome here is a question for you:';
     ApiHelper.getRandomQuestion(msg.meta.user_id)
@@ -68,16 +83,6 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
   msg.respond(msg.body.response_url, responseAnswer);
 });
 
-ApiHelper.getUser(userId)
-    .then((user) => {
-      //if (null === user) {
-        //ApiHelper.createUser(user);
-      //}
-    
-      console.log(user.name);
-});
-
-
 // Random question
 // find a random question user has not already answered
 //ApiHelper.getRandomQuestion(userId).then((question) => {
@@ -87,23 +92,6 @@ ApiHelper.getUser(userId)
     //msg.say(question.question);
   //});
 //});
-
-return;
-
-// use `PORT` env var on Beep Boop - default to 3000 locally
-//var port = process.env.PORT || 3000
-
-//var slapp = Slapp({
-  //// Beep Boop sets the SLACK_VERIFY_TOKEN env var
-  //verify_token: process.env.SLACK_VERIFY_TOKEN,
-  //convo_store: ConvoStore(),
-  //context: Context()
-//})
-
-//// enable debugging
-//require('beepboop-slapp-presence-polyfill')(slapp, {
-  //debug: true
-//})
 //[>**************************************************
 ////
 //[>************************************************<]
