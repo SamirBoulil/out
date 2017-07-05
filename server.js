@@ -7,88 +7,171 @@ const ConvoStore = require('slapp-convo-beepboop');
 const Context = require('slapp-context-beepboop');
 const ApiHelper = require('./ApiHelper');
 
-// use `PORT` env var on Beep Boop - default to 3000 locally
-var port = process.env.PORT || 3000
-
-var slapp = Slapp({
-  // Beep Boop sets the SLACK_VERIFY_TOKEN env var
-  verify_token: process.env.SLACK_VERIFY_TOKEN,
-  convo_store: ConvoStore(),
-  context: Context()
+// Start
+slapp.message('^.start', ['direct_message'], (msg) => {
+  ApiHelper.isPlayerRegistered(msg.meta.user_id)
+  .then((isRegistered) => {
+    if (!isRegistered) {
+      msg.say({
+        text: '',
+        attachments: [{
+          fallback: 'Do you want to start the Once Uppon a time quizz ?',
+          title: 'Do you want to start the Once Uppon a time quizz ?',
+          callback_id: 'register_callback',
+          color: '#3AA3E3',
+          attachment_type: 'default',
+          actions: [{
+            name: 'register_answer',
+            text: 'Hell yeah!',
+            style: 'primary',
+            type: 'button',
+            value: 'yes'
+          },
+          {
+            name: 'register_answer',
+            text: 'Nope, not intrested',
+            type: 'button',
+            value: 'no'
+          }]
+        }]
+      })
+    } else {
+      msg.say('Ok, here is a new question for you:');
+    }
+  })
+  .catch(function(error) {
+    // TODO: Send message if an error occured
+  });
 })
 
-// enable debugging
-require('beepboop-slapp-presence-polyfill')(slapp, {
-  debug: true
-})
-/***************************************************
-//
-/**************************************************/
-var sendMatchConfirmation = (msg, state) => {
-  msg.say({
-    channel: state.loserId,
-    as_user: true,
+slapp.action('register_callback', 'register_answer', (msg, value) => {
+  var registerAnswer = 'Alright, then come back to me when you are ready!;');
+  if (value === 'yes') {
+    registerAnswer = 'Awesome here is a question for you:';
+    ApiHelper.getRandomQuestion(msg.meta.user_id)
+        .then((question) => {
+          msg.say(question.question);
+        });
+  }
+
+  var responseAnswer = {
     text: '',
     attachments: [{
-      fallback: 'Match log confirmation',
-      title: `Do you confirm that you lost ${state.winnerScore}-${state.loserScore} against <@${state.winnerId}> ?`,
-      callback_id: 'match_confirmation_callback',
+      fallback: 'Do you want to register ?',
+      title: 'Do you want to join the Akeneo Baby Foot Star League (ABSL) ?',
+      text: registerAnswer,
+      callback_id: 'register_callback',
       color: '#3AA3E3',
-      attachment_type: 'default',
-      actions: [{
-        name: 'match_confirmation_yes',
-        text: 'Yep, good game.',
-        style: 'primary',
-        type: 'button',
-        value: Utils.marshall({ state: state, value: 'yes' })
-      },
-        {
-          name: 'match_confirmation_no',
-          text: 'NO WAY ! That\' a lie!',
-          type: 'button',
-          value: Utils.marshall({ state: state, value: 'no' })
-        }]
     }]
-  });
-};
+  };
 
-var sendLeaderboard = (msg, playerId) => {
-  ApiHelper.getRankings().then((rankings) => {
-    var leaderBoard = rankings.sort((element1, element2) => {
-      return element1.rank > element2.rank;
-    });
+  msg.respond(msg.body.response_url, responseAnswer);
+});
 
-    var leaderBoard = rankings.map((element) => {
-      return element.rank + "- <@" + element.playerId + ">"
-    });
+ApiHelper.getUser(userId)
+    .then((user) => {
+      //if (null === user) {
+        //ApiHelper.createUser(user);
+      //}
+    
+      console.log(user.name);
+});
 
-    msg.say({
-      channel: playerId,
-      as_user: true,
-      text: '*Leaderboard:*\n' + leaderBoard.join('\n')
-    });
-  });
-};
 
-var sendChallengers = (msg, playerId) => {
-  ApiHelper.getChallengers(playerId).then((challengers) => {
-    var messages = [];
+// Random question
+// find a random question user has not already answered
+//ApiHelper.getRandomQuestion(userId).then((question) => {
+  //// reset user current_question and new progression
+  //ApiHelper.setCurrentQuestion(questionId)
+  //.then(() => {
+    //msg.say(question.question);
+  //});
+//});
 
-    if (typeof(challengers.toBeat) !== 'undefined') {
-      messages.push(':up: if you beat <@' + challengers.toBeat.playerId + '> ('+challengers.toBeat.rank+' th)');
-    }
+return;
 
-    if (typeof(challengers.notToLose) !== 'undefined') {
-      messages.push(':down: if you lose against <@' + challengers.notToLose.playerId + '> ('+challengers.notToLose.rank+' th)');
-    }
+// use `PORT` env var on Beep Boop - default to 3000 locally
+//var port = process.env.PORT || 3000
 
-    msg.say({
-      channel: playerId,
-      as_user: true,
-      text: '*List of challengers:*' + messages.join('\n')
-    });
-  });
-};
+//var slapp = Slapp({
+  //// Beep Boop sets the SLACK_VERIFY_TOKEN env var
+  //verify_token: process.env.SLACK_VERIFY_TOKEN,
+  //convo_store: ConvoStore(),
+  //context: Context()
+//})
+
+//// enable debugging
+//require('beepboop-slapp-presence-polyfill')(slapp, {
+  //debug: true
+//})
+//[>**************************************************
+////
+//[>************************************************<]
+//var sendMatchConfirmation = (msg, state) => {
+  //msg.say({
+    //channel: state.loserId,
+    //as_user: true,
+    //text: '',
+    //attachments: [{
+      //fallback: 'Match log confirmation',
+      //title: `Do you confirm that you lost ${state.winnerScore}-${state.loserScore} against <@${state.winnerId}> ?`,
+      //callback_id: 'match_confirmation_callback',
+      //color: '#3AA3E3',
+      //attachment_type: 'default',
+      //actions: [{
+        //name: 'match_confirmation_yes',
+        //text: 'Yep, good game.',
+        //style: 'primary',
+        //type: 'button',
+        //value: Utils.marshall({ state: state, value: 'yes' })
+      //},
+        //{
+          //name: 'match_confirmation_no',
+          //text: 'NO WAY ! That\' a lie!',
+          //type: 'button',
+          //value: Utils.marshall({ state: state, value: 'no' })
+        //}]
+    //}]
+  //});
+//};
+
+//var sendLeaderboard = (msg, playerId) => {
+  //ApiHelper.getRankings().then((rankings) => {
+    //var leaderBoard = rankings.sort((element1, element2) => {
+      //return element1.rank > element2.rank;
+    //});
+
+    //var leaderBoard = rankings.map((element) => {
+      //return element.rank + "- <@" + element.playerId + ">"
+    //});
+
+    //msg.say({
+      //channel: playerId,
+      //as_user: true,
+      //text: '*Leaderboard:*\n' + leaderBoard.join('\n')
+    //});
+  //});
+//};
+
+//var sendChallengers = (msg, playerId) => {
+  //ApiHelper.getChallengers(playerId).then((challengers) => {
+    //var messages = [];
+
+    //if (typeof(challengers.toBeat) !== 'undefined') {
+      //messages.push(':up: if you beat <@' + challengers.toBeat.playerId + '> ('+challengers.toBeat.rank+' th)');
+    //}
+
+    //if (typeof(challengers.notToLose) !== 'undefined') {
+      //messages.push(':down: if you lose against <@' + challengers.notToLose.playerId + '> ('+challengers.notToLose.rank+' th)');
+    //}
+
+    //msg.say({
+      //channel: playerId,
+      //as_user: true,
+      //text: '*List of challengers:*' + messages.join('\n')
+    //});
+  //});
+//};
 
 //*********************************************
 // Register handler
