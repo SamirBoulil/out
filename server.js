@@ -24,39 +24,40 @@ require('beepboop-slapp-presence-polyfill')(slapp, {
 
 // Start
 slapp.message('^.start', ['direct_message'], (msg) => {
-  ApiHelper.isPlayerRegistered(msg.meta.user_id)
-  .then((isRegistered) => {
-    if (!isRegistered) {
-      msg.say({
-        text: '',
-        attachments: [{
-          fallback: 'Do you want to start the Once Uppon a time quizz ?',
-          title: 'Do you want to start the Once Uppon a time quizz ?',
-          callback_id: 'register_callback',
-          color: '#3AA3E3',
-          attachment_type: 'default',
-          actions: [{
-            name: 'register_answer',
-            text: 'Hell yeah!',
-            style: 'primary',
-            type: 'button',
-            value: 'yes'
-          },
-          {
-            name: 'register_answer',
-            text: 'Nope, not intrested',
-            type: 'button',
-            value: 'no'
-          }]
-        }]
-      })
-    } else {
-      msg.say('Ok, here is a new question for you:');
-    }
-  })
-  .catch(function(error) {
-    // TODO: Send message if an error occured
-  });
+  msg.say('Hello');
+  //ApiHelper.isPlayerRegistered(msg.meta.user_id)
+  //.then((isRegistered) => {
+    //if (!isRegistered) {
+      //msg.say({
+        //text: '',
+        //attachments: [{
+          //fallback: 'Do you want to start the Once Uppon a time quizz ?',
+          //title: 'Do you want to start the Once Uppon a time quizz ?',
+          //callback_id: 'register_callback',
+          //color: '#3AA3E3',
+          //attachment_type: 'default',
+          //actions: [{
+            //name: 'register_answer',
+            //text: 'Hell yeah!',
+            //style: 'primary',
+            //type: 'button',
+            //value: 'yes'
+          //},
+          //{
+            //name: 'register_answer',
+            //text: 'Nope, not intrested',
+            //type: 'button',
+            //value: 'no'
+          //}]
+        //}]
+      //})
+    //} else {
+      //msg.say('Ok, here is a new question for you:');
+    //}
+  //})
+  //.catch(function(error) {
+    //// TODO: Send message if an error occured
+  //});
 })
 
 slapp.action('register_callback', 'register_answer', (msg, value) => {
