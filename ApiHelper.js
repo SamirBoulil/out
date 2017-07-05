@@ -17,6 +17,19 @@ var ApiHelper = (function() {
       });
   }
 
+  self.setCurrentQuestion = function(userId, questionId) {
+    return axios.patch('users/' + userId + '.json', {
+      "current_question": questionId,
+    });
+  }
+
+  self.createUser = function(userId) {
+    return axios.put('users/' + userId + '.json', {
+      "current_question": null,
+      "points": 0,
+    });
+  }
+
   self.isPlayerRegistered = function(userId){
     return axios.get('users/' + userId + '.json')
       .then(function(response) {
@@ -30,15 +43,15 @@ var ApiHelper = (function() {
       });
   };
 
-  //self.getRandomQuestion = function(playerId) {
-    //return axios.get('questions.json')
-      //.then((response) => {
-        //var questions = response.data;
-        //var question = questions[Math.floor(Math.random() * questions.length)];
+  self.getRandomQuestion = function() {
+    return axios.get('questions.json')
+      .then((response) => {
+        var questions = Utils.objectToArray(response.data);
+        var question = questions[Math.floor(Math.random() * questions.length)];
 
-        //return question 
-      //})
-  //};
+        return question;
+      })
+  };
 
   self.getAnswer = function(playerId) {
     // find user

@@ -24,50 +24,67 @@ require('beepboop-slapp-presence-polyfill')(slapp, {
 
 // Start
 slapp.message('^.start', ['direct_message'], (msg) => {
-  msg.say('Hello');
-  //ApiHelper.isPlayerRegistered(msg.meta.user_id)
-  //.then((isRegistered) => {
-    //if (!isRegistered) {
-      //msg.say({
-        //text: '',
-        //attachments: [{
-          //fallback: 'Do you want to start the Once Uppon a time quizz ?',
-          //title: 'Do you want to start the Once Uppon a time quizz ?',
-          //callback_id: 'register_callback',
-          //color: '#3AA3E3',
-          //attachment_type: 'default',
-          //actions: [{
-            //name: 'register_answer',
-            //text: 'Hell yeah!',
-            //style: 'primary',
-            //type: 'button',
-            //value: 'yes'
-          //},
-          //{
-            //name: 'register_answer',
-            //text: 'Nope, not intrested',
-            //type: 'button',
-            //value: 'no'
-          //}]
-        //}]
-      //})
-    //} else {
-      //msg.say('Ok, here is a new question for you:');
-    //}
-  //})
-  //.catch(function(error) {
-    //// TODO: Send message if an error occured
-  //});
+  ApiHelper.isPlayerRegistered(msg.meta.user_id)
+    .then((isRegistered) => {
+      if (!isRegistered) {
+        msg.say({
+          text: '',
+          attachments: [{
+            fallback: 'Do you want to start the Once Uppon a time quizz ?',
+            title: 'Do you want to start the Once Uppon a time quizz ?',
+            callback_id: 'register_callback',
+            color: '#3AA3E3',
+            attachment_type: 'default',
+            actions: [{
+              name: 'register_answer',
+              text: 'Hell yeah!',
+              style: 'primary',
+              type: 'button',
+              value: 'yes'
+            },
+              {
+                name: 'register_answer',
+                text: 'Nope, not intrested',
+                type: 'button',
+                value: 'no'
+              }]
+          }]
+        })
+      } else {
+        ApiHelper.getRandomQuestion()
+          .then((question) => {
+            console.log('RANDOM QUESTION SELECTED');
+            console.log(question);
+            ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
+              .then(() => {
+                msg.say(question.question);
+              });
+          });
+      }
+    })
+    .catch(function(error) {
+      // TODO: Send message if an error occured
+    });
 })
 
 slapp.action('register_callback', 'register_answer', (msg, value) => {
   var registerAnswer = 'Alright, then come back to me when you are ready!;';
+
   if (value === 'yes') {
     registerAnswer = 'Awesome here is a question for you:';
-    ApiHelper.getRandomQuestion(msg.meta.user_id)
-        .then((question) => {
-          msg.say(question.question);
-        });
+    ApiHelper.createUser(msg.meta.user_id)
+      .then(() => {
+        console.log('USER CREATED');
+        ApiHelper.getRandomQuestion()
+          .then((question) => {
+            console.log('RANDOM QUESTION SELECTED');
+            console.log(question);
+            ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
+              .then(() => {
+                msg.say(question.question);
+              });
+          });
+      });
   }
 
   var responseAnswer = {
@@ -87,79 +104,79 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
 // Random question
 // find a random question user has not already answered
 //ApiHelper.getRandomQuestion(userId).then((question) => {
-  //// reset user current_question and new progression
-  //ApiHelper.setCurrentQuestion(questionId)
-  //.then(() => {
-    //msg.say(question.question);
-  //});
+//// reset user current_question and new progression
+//ApiHelper.setCurrentQuestion(questionId)
+//.then(() => {
+//msg.say(question.question);
+//});
 //});
 //[>**************************************************
 ////
 //[>************************************************<]
 //var sendMatchConfirmation = (msg, state) => {
-  //msg.say({
-    //channel: state.loserId,
-    //as_user: true,
-    //text: '',
-    //attachments: [{
-      //fallback: 'Match log confirmation',
-      //title: `Do you confirm that you lost ${state.winnerScore}-${state.loserScore} against <@${state.winnerId}> ?`,
-      //callback_id: 'match_confirmation_callback',
-      //color: '#3AA3E3',
-      //attachment_type: 'default',
-      //actions: [{
-        //name: 'match_confirmation_yes',
-        //text: 'Yep, good game.',
-        //style: 'primary',
-        //type: 'button',
-        //value: Utils.marshall({ state: state, value: 'yes' })
-      //},
-        //{
-          //name: 'match_confirmation_no',
-          //text: 'NO WAY ! That\' a lie!',
-          //type: 'button',
-          //value: Utils.marshall({ state: state, value: 'no' })
-        //}]
-    //}]
-  //});
+//msg.say({
+//channel: state.loserId,
+//as_user: true,
+//text: '',
+//attachments: [{
+//fallback: 'Match log confirmation',
+//title: `Do you confirm that you lost ${state.winnerScore}-${state.loserScore} against <@${state.winnerId}> ?`,
+//callback_id: 'match_confirmation_callback',
+//color: '#3AA3E3',
+//attachment_type: 'default',
+//actions: [{
+//name: 'match_confirmation_yes',
+//text: 'Yep, good game.',
+//style: 'primary',
+//type: 'button',
+//value: Utils.marshall({ state: state, value: 'yes' })
+//},
+//{
+//name: 'match_confirmation_no',
+//text: 'NO WAY ! That\' a lie!',
+//type: 'button',
+//value: Utils.marshall({ state: state, value: 'no' })
+//}]
+//}]
+//});
 //};
 
 //var sendLeaderboard = (msg, playerId) => {
-  //ApiHelper.getRankings().then((rankings) => {
-    //var leaderBoard = rankings.sort((element1, element2) => {
-      //return element1.rank > element2.rank;
-    //});
+//ApiHelper.getRankings().then((rankings) => {
+//var leaderBoard = rankings.sort((element1, element2) => {
+//return element1.rank > element2.rank;
+//});
 
-    //var leaderBoard = rankings.map((element) => {
-      //return element.rank + "- <@" + element.playerId + ">"
-    //});
+//var leaderBoard = rankings.map((element) => {
+//return element.rank + "- <@" + element.playerId + ">"
+//});
 
-    //msg.say({
-      //channel: playerId,
-      //as_user: true,
-      //text: '*Leaderboard:*\n' + leaderBoard.join('\n')
-    //});
-  //});
+//msg.say({
+//channel: playerId,
+//as_user: true,
+//text: '*Leaderboard:*\n' + leaderBoard.join('\n')
+//});
+//});
 //};
 
 //var sendChallengers = (msg, playerId) => {
-  //ApiHelper.getChallengers(playerId).then((challengers) => {
-    //var messages = [];
+//ApiHelper.getChallengers(playerId).then((challengers) => {
+//var messages = [];
 
-    //if (typeof(challengers.toBeat) !== 'undefined') {
-      //messages.push(':up: if you beat <@' + challengers.toBeat.playerId + '> ('+challengers.toBeat.rank+' th)');
-    //}
+//if (typeof(challengers.toBeat) !== 'undefined') {
+//messages.push(':up: if you beat <@' + challengers.toBeat.playerId + '> ('+challengers.toBeat.rank+' th)');
+//}
 
-    //if (typeof(challengers.notToLose) !== 'undefined') {
-      //messages.push(':down: if you lose against <@' + challengers.notToLose.playerId + '> ('+challengers.notToLose.rank+' th)');
-    //}
+//if (typeof(challengers.notToLose) !== 'undefined') {
+//messages.push(':down: if you lose against <@' + challengers.notToLose.playerId + '> ('+challengers.notToLose.rank+' th)');
+//}
 
-    //msg.say({
-      //channel: playerId,
-      //as_user: true,
-      //text: '*List of challengers:*' + messages.join('\n')
-    //});
-  //});
+//msg.say({
+//channel: playerId,
+//as_user: true,
+//text: '*List of challengers:*' + messages.join('\n')
+//});
+//});
 //};
 
 //*********************************************
@@ -167,40 +184,40 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
 //*********************************************
 slapp.message('^.register', ['direct_message'], (msg) => {
   ApiHelper.isPlayerRegistered(msg.meta.user_id)
-  .then((isRegistered) => {
-    if (!isRegistered) {
-      msg.say({
-        text: '',
-        attachments: [{
-          fallback: 'Do you want to register ?',
-          title: 'Do you want to join the Akeneo Baby Foot Star League (ABSL) ?',
-          callback_id: 'register_callback',
-          color: '#3AA3E3',
-          attachment_type: 'default',
-          actions: [{
-            name: 'register_answer',
-            text: 'Hell yeah!',
-            style: 'primary',
-            type: 'button',
-            value: 'yes'
-          },
-          {
-            name: 'register_answer',
-            text: 'Nope, not intrested',
-            type: 'button',
-            value: 'no'
+    .then((isRegistered) => {
+      if (!isRegistered) {
+        msg.say({
+          text: '',
+          attachments: [{
+            fallback: 'Do you want to register ?',
+            title: 'Do you want to join the Akeneo Baby Foot Star League (ABSL) ?',
+            callback_id: 'register_callback',
+            color: '#3AA3E3',
+            attachment_type: 'default',
+            actions: [{
+              name: 'register_answer',
+              text: 'Hell yeah!',
+              style: 'primary',
+              type: 'button',
+              value: 'yes'
+            },
+              {
+                name: 'register_answer',
+                text: 'Nope, not intrested',
+                type: 'button',
+                value: 'no'
+              }]
           }]
-        }]
-      })
-    } else {
-      msg.say('You are already enrolled into the Akeneo Baby Foot Star League');
-      msg.say('type .leaderboard to see who is the better players');
-      msg.say('type .challengers to see who you need to beat to advance in the leaderboard');
-    }
-  })
-  .catch(function(error) {
-    // TODO: Send message if an error occured
-  });
+        })
+      } else {
+        msg.say('You are already enrolled into the Akeneo Baby Foot Star League');
+        msg.say('type .leaderboard to see who is the better players');
+        msg.say('type .challengers to see who you need to beat to advance in the leaderboard');
+      }
+    })
+    .catch(function(error) {
+      // TODO: Send message if an error occured
+    });
 })
 
 // Two != callbacks for this
@@ -264,26 +281,26 @@ slapp.message('^.win <@([^>]+)> ([^>]+)\s*-\s*([^>]+)$', ['direct_message'], (ms
   }
 
   ApiHelper.isPlayerRegistered(loserId)
-  .then((isRegistered) => {
-    if (isRegistered === false) {
-      isInputError = true;
-      textResponse.push(`- Losing player (<@${loserId}>) is not registered in the Akeneo Baby Foot League.`);
-      // TODO: Show the list of user with the rankings
-    }
+    .then((isRegistered) => {
+      if (isRegistered === false) {
+        isInputError = true;
+        textResponse.push(`- Losing player (<@${loserId}>) is not registered in the Akeneo Baby Foot League.`);
+        // TODO: Show the list of user with the rankings
+      }
 
-    if (isInputError) {
-      msg.say('Oups, an error occured while saving the game result.\n' + textResponse.join('\n'));
-    } else {
-      var state = {winnerId: winnerId, loserId: loserId, winnerScore, loserScore};
-      msg
-      .say(`Congratz for this huge win ! Let me check the result with <@${loserId}>.\n I'll come back to you when I'm done.`);
-      sendMatchConfirmation(msg, state);
-    }
-  })
-  .catch((error) => {
-    console.log('An error occured while checking if the loserId is registered');
-    console.log(error);
-  });
+      if (isInputError) {
+        msg.say('Oups, an error occured while saving the game result.\n' + textResponse.join('\n'));
+      } else {
+        var state = {winnerId: winnerId, loserId: loserId, winnerScore, loserScore};
+        msg
+          .say(`Congratz for this huge win ! Let me check the result with <@${loserId}>.\n I'll come back to you when I'm done.`);
+        sendMatchConfirmation(msg, state);
+      }
+    })
+    .catch((error) => {
+      console.log('An error occured while checking if the loserId is registered');
+      console.log(error);
+    });
 });
 
 slapp.action('match_confirmation_callback', 'match_confirmation_yes', (msg, args) => {
@@ -292,27 +309,27 @@ slapp.action('match_confirmation_callback', 'match_confirmation_yes', (msg, args
   if (typeof(args.state) !== 'undefined') {
     var state = args.state;
     ApiHelper.addMatchResult(state.winnerId, state.loserId, state.winnerScore, state.loserScore)
-    .then(() => {
-      msg.respond(msg.body.response_url, 'Ok, the match result has been successfully registered.');
-      ApiHelper.refreshRank(state.winnerId, state.loserId)
       .then(() => {
-        // Show leaderboard and challengers
-        sendLeaderboard(msg, state.loserId);
-        sendChallengers(msg, state.loserId);
+        msg.respond(msg.body.response_url, 'Ok, the match result has been successfully registered.');
+        ApiHelper.refreshRank(state.winnerId, state.loserId)
+          .then(() => {
+            // Show leaderboard and challengers
+            sendLeaderboard(msg, state.loserId);
+            sendChallengers(msg, state.loserId);
 
-        msg.say({
-          channel: state.winnerId,
-          as_user: true,
-          text: `<@${state.loserId}> confirmed your victory :tada:. Good game.\nSee the *leaderboard* with \`.leaderboard\`\n or see who are your next *challengers* with \`.challengers\``
-        });
+            msg.say({
+              channel: state.winnerId,
+              as_user: true,
+              text: `<@${state.loserId}> confirmed your victory :tada:. Good game.\nSee the *leaderboard* with \`.leaderboard\`\n or see who are your next *challengers* with \`.challengers\``
+            });
 
-        msg.say({
-            channel: state.loserId,
-            as_user: true,
-            text: `See the *leaderboard* with \`.leaderboard\`\n or see who are your next *challengers* with \`.challengers\``
-        });
+            msg.say({
+              channel: state.loserId,
+              as_user: true,
+              text: `See the *leaderboard* with \`.leaderboard\`\n or see who are your next *challengers* with \`.challengers\``
+            });
+          });
       });
-    });
   }
 });
 
@@ -393,13 +410,13 @@ slapp.message('help|.wcid', ['mention', 'direct_message'], (msg) => {
   var HELP_TEXT = `
   Hello, I'm Pierluigi the Akeneo Baby Foot referee. Here is the information I can provide you:
   \`help\` - to get some help.
-  \`.register\` - to enroll in the baby footleague.
-  \`.win <LOSING-PLAYER> <WINNER-SCORE>-<LOSER-SCORE>\` - to log a game result you have won.
-  \`.leaderboard\` - Show the Baby foot leaderboard.
-  \`.challengers\` - Show the next challengers you need to take on!
-  \`.last-games\` - See the last 15 games results played in the league.
-  \`.my-games\` - See all your games results in the baby foot league.
-  `
+    \`.register\` - to enroll in the baby footleague.
+    \`.win <LOSING-PLAYER> <WINNER-SCORE>-<LOSER-SCORE>\` - to log a game result you have won.
+    \`.leaderboard\` - Show the Baby foot leaderboard.
+    \`.challengers\` - Show the next challengers you need to take on!
+    \`.last-games\` - See the last 15 games results played in the league.
+    \`.my-games\` - See all your games results in the baby foot league.
+    `
   msg.say(HELP_TEXT)
 })
 
