@@ -22,6 +22,7 @@ require('beepboop-slapp-presence-polyfill')(slapp, {
   debug: true
 })
 
+
 // Start
 slapp.message('^start', ['direct_message'], (msg) => {
   ApiHelper.isPlayerRegistered(msg.meta.user_id)
@@ -66,26 +67,33 @@ slapp.message('^start', ['direct_message'], (msg) => {
     });
 })
 
-// Start
+// Answer
 slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
   console.log('Answer: ' + userId);
-  ApiHelper.getCurrentQuestion(msg.meta.user_id)
-  .then((question) => {
-    if (question !== null) {
-      if (userId === question.answer_uid) {
-        console.log('Good answer');
-        msg.say('GOOD JOB, here is the explanation:');
-        msg.say(question.description);
-        msg.say('_Type "leaderboard", to see the leaderboard._');
-        ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
-        // TODO: Increment points.
-      } else {
-        msg.say('Nope. _(you can type "clue" to show a hint.)_')
-      }
-    }
-    msg.say('_Or type "start", to try another question._');
+  ApiHelper.getUser(msg.meta.user_id)
+  .then((user) => {
+    ApiHelper.getCurrentQuestion(msg.meta.user_id)
+      .then((question) => {
+        if (question !== null) {
+          if (userId === question.answer_uid) {
+            console.log('Good answer');
+            msg.say('GOOD JOB, here is the explanation:');
+            msg.say(question.description);
+            msg.say('_Type "leaderboard", to see the leaderboard._');
+            ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
+            var totalPoints = user.points + (5 - user.used_clues);
+            ApiHelper.setTotalPoints(msg.meta.user_id, totalPoints);
+          } else {
+            msg.say('Nope. _(you can type "clue" to show a hint.)_')
+          }
+        }
+        msg.say('_Or type "start", to try another question._');
+      });
   });
 });
+
+// question
+
 
 // clue
 slapp.message('^clue', ['direct_message'], (msg) => {
@@ -113,7 +121,22 @@ slapp.message('^clue', ['direct_message'], (msg) => {
 });
 
 
+// Leaderboard
+slapp.message('^leaderboard', ['direct_message'], (msg) => {
+  ApiHelper.getUsers().then((users) => {
+    console.log(users);
+    var leaderBoard = users.sort((element1, element2) => {
+      return element1.points < element2.points;
+    });
 
+    var leaderBoard = users.map((element, index) => {
+      var rank = index + 1;
+      return rank + " - <@" + element.userId + "> _("+ element.points +" points)_";
+    });
+
+    msg.say('*Leaderboard:*\n' + leaderBoard.join('\n'));
+  });
+});
 
 
 // help

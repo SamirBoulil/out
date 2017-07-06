@@ -10,6 +10,13 @@ var ApiHelper = (function() {
   var self = {};
 
   // User management
+  self.getUsers = function() {
+    return axios.get('users.json')
+      .then((response) => {
+        return Utils.objectToArray(response.data);
+      });
+  }
+
   self.getUser = function(userId) {
     console.log('USER ID:' + userId);
     return axios.get('users/' + userId + '.json')
@@ -32,8 +39,15 @@ var ApiHelper = (function() {
     });
   }
 
+  self.setTotalPoints = function(userId, totalPoints) {
+    return axios.patch('users/' + userId + '.json', {
+      "points": totalPoints,
+    });
+  }
+
   self.createUser = function(userId) {
     return axios.put('users/' + userId + '.json', {
+      "userId": userId,
       "current_question": null,
       "points": 0,
       "used_clues": 0,
