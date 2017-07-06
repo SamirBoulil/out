@@ -22,7 +22,6 @@ require('beepboop-slapp-presence-polyfill')(slapp, {
   debug: true
 })
 
-
 // Start
 slapp.message('^start', ['direct_message'], (msg) => {
   ApiHelper.isPlayerRegistered(msg.meta.user_id)
@@ -52,13 +51,17 @@ slapp.message('^start', ['direct_message'], (msg) => {
           }]
         })
       } else {
-        console.log('About to get a random question');
-        ApiHelper.getRandomQuestion()
+        console.log('About to get a random question.');
+        ApiHelper.getRandomQuestion(msg.meta.user_id)
           .then((question) => {
-            ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
-              .then(() => {
-                msg.say(question.question);
-              });
+            if (question !== null) {
+              ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
+                .then(() => {
+                  msg.say(question.question);
+                });
+            } else {
+              msg.say('Impressive! you answered correctly to all the questions!');
+            }
           });
       }
     })
@@ -80,9 +83,20 @@ slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
             msg.say('GOOD JOB, here is the explanation:');
             msg.say(question.description);
             msg.say('_Type "leaderboard", to see the leaderboard._');
+
             ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
+
             var totalPoints = user.points + (5 - user.used_clues);
             ApiHelper.setTotalPoints(msg.meta.user_id, totalPoints);
+
+            var answeredQuestions = [];
+            if (typeof(user.answeredQuestions) !== 'undefined') {
+              answeredQuestions = user.answeredQuestions;
+            }
+            answeredQuestions.push(question.question_id);
+            console.log(user);
+            console.log(answeredQuestions)
+            ApiHelper.setAnsweredQuestions(msg.meta.user_id, answeredQuestions);
           } else {
             msg.say('Nope. _(you can type "clue" to show a hint.)_')
           }
@@ -137,7 +151,6 @@ slapp.message('^leaderboard', ['direct_message'], (msg) => {
     msg.say('*Leaderboard:*\n' + leaderBoard.join('\n'));
   });
 });
-
 
 // help
 

@@ -39,6 +39,12 @@ var ApiHelper = (function() {
     });
   }
 
+  self.setAnsweredQuestions = function(userId, answeredQuestions) {
+    return axios.patch('users/' + userId + '.json', {
+      "answeredQuestions": answeredQuestions,
+    });
+  }
+
   self.setTotalPoints = function(userId, totalPoints) {
     return axios.patch('users/' + userId + '.json', {
       "points": totalPoints,
@@ -51,11 +57,12 @@ var ApiHelper = (function() {
       "current_question": null,
       "points": 0,
       "used_clues": 0,
+      "answeredQuestions": []
     });
   }
 
   self.isPlayerRegistered = function(userId){
-    return axios.get('users/' + userId + '.json')
+    return self.getUser(userId)
       .then(function(response) {
         return response.data !== null;
       })
@@ -67,16 +74,33 @@ var ApiHelper = (function() {
       });
   };
 
-  self.getRandomQuestion = function() {
-    return axios.get('questions.json')
-      .then((response) => {
-        var questions = Utils.objectToArray(response.data);
-        var question = questions[Math.floor(Math.random() * questions.length)];
+  self.getRandomQuestion = function(userId) {
+    return self.getUser(userId)
+      .then((user) => {
+        return axios.get('questions.json')
+          .then((response) => {
+            var questions = Utils.objectToArray(response.data);
+            var unansweredQuestions = questions;
 
-        console.log(question);
+            if (typeof(user.answeredQuestions) !== 'undefined') {
+              unansweredQuestions = questions.filter((question) => {
+                return user.answeredQuestions.indexOf(question.question_id) === -1;
+              });
 
-        return question;
-      })
+              console.log('############## Unanswered questions');
+              console.log(unansweredQuestions);
+
+              if (unansweredQuestions.length === 0) {
+                return null;
+              }
+            }
+
+            var question = unansweredQuestions[Math.floor(Math.random() * unansweredQuestions.length)];
+            console.log(question);
+
+            return question;
+          });
+      });
   };
 
   self.getCurrentQuestion = function(userId) {
