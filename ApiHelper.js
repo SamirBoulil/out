@@ -63,8 +63,8 @@ var ApiHelper = (function() {
 
   self.isPlayerRegistered = function(userId){
     return self.getUser(userId)
-      .then(function(response) {
-        return response.data !== null;
+      .then(function(user) {
+        return user !== null;
       })
       .catch(function(error) {
         console.log("An error occured while checking if a user id was registered.");

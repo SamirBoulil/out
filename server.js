@@ -7,12 +7,11 @@ const ConvoStore = require('slapp-convo-beepboop');
 const Context = require('slapp-context-beepboop');
 const ApiHelper = require('./ApiHelper');
 
-
 // TODO:
-// - Dataset/fixtures
+// - Dataset/fixtures - In progress
+// - Game mechanics (automatic clue or not ?, number of tries) - In progress
 // - Wording
 // - Images
-// - Game mechanics (automatic clue or not ?, number of tries)
 
 // use `PORT` env var on Beep Boop - default to 3000 locally
 var port = process.env.PORT || 3000
@@ -64,6 +63,7 @@ slapp.message('^start', ['direct_message'], (msg) => {
             if (question !== null) {
               ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
                 .then(() => {
+                  msg.say('Ok, here is a new question for you.')
                   msg.say(question.question);
                 });
             } else {
@@ -77,60 +77,116 @@ slapp.message('^start', ['direct_message'], (msg) => {
     });
 })
 
-// Answer
-slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
-  console.log('Answer: ' + userId);
-  ApiHelper.getUser(msg.meta.user_id)
-  .then((user) => {
-    ApiHelper.getCurrentQuestion(msg.meta.user_id)
-      .then((question) => {
-        if (question !== null) {
-          if (userId === question.answer_uid) {
-            console.log('Good answer');
-            msg.say('GOOD JOB, here is the explanation:');
-            msg.say(question.description);
-            msg.say('_Type "leaderboard", to see the leaderboard._');
+slapp.action('register_callback', 'register_answer', (msg, value) => {
+  var registerAnswer = 'Alright, then come back to me when you are ready!;';
 
-            ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
-
-            var totalPoints = user.points + (5 - user.used_clues);
-            ApiHelper.setTotalPoints(msg.meta.user_id, totalPoints);
-
-            var answeredQuestions = [];
-            if (typeof(user.answeredQuestions) !== 'undefined') {
-              answeredQuestions = user.answeredQuestions;
-            }
-            answeredQuestions.push(question.question_id);
-            console.log(user);
-            console.log(answeredQuestions)
-            ApiHelper.setAnsweredQuestions(msg.meta.user_id, answeredQuestions);
-          } else {
-            msg.say('Nope. _(you can type "clue" to show a hint.)_')
-          }
-        }
-        msg.say('_Or type "start", to try another question._');
+  if (value === 'yes') {
+    registerAnswer = 'Awesome here is a question for you:';
+    ApiHelper.createUser(msg.meta.user_id)
+      .then(() => {
+        console.log('USER CREATED');
+        ApiHelper.getRandomQuestion(msg.meta.user_id)
+          .then((question) => {
+            console.log('RANDOM QUESTION SELECTED' + question.question_id);
+            ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
+              .then(() => {
+                var responseAnswer = {
+                  text: '',
+                  attachments: [{
+                    fallback: 'Do you want to register ?',
+                    title: "Do you want to start the Once Uppon a time quizz ?",
+                    text: question.question,
+                    callback_id: 'register_callback',
+                    color: '#3AA3E3',
+                  }]
+                };
+                msg.respond(msg.body.response_url, responseAnswer);
+              });
+          });
       });
-  });
+  } else {
+    var responseAnswer = {
+      text: '',
+      attachments: [{
+        fallback: 'Do you want to register ?',
+        title: "It's okay, come back later if you are ready. Don't forget to press 'start'",
+        text: registerAnswer,
+        callback_id: 'register_callback',
+        color: '#3AA3E3',
+      }]
+    };
+
+    msg.respond(msg.body.response_url, responseAnswer);
+  }
+
 });
 
-// question
+// Answer
+slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
+  // TODO: Protect from unregistered users
+  console.log('Answer: ' + userId);
+  ApiHelper.getUser(msg.meta.user_id)
+    .then((user) => {
+      ApiHelper.getCurrentQuestion(msg.meta.user_id)
+        .then((question) => {
+          if (question !== null) {
+            if (userId === question.answer_uid) {
+              msg.say('*Good answer!* If you want to know the whole story, do not hesitate to have a drink with <@'+ question.answer_uid+ '>!');
+              msg.say('_Type "leaderboard", to see the leaderboard._');
 
+              ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
+
+              var totalPoints = user.points + (3 - user.used_clues);
+              ApiHelper.setTotalPoints(msg.meta.user_id, totalPoints);
+
+              var answeredQuestions = [];
+              if (typeof(user.answeredQuestions) !== 'undefined') {
+                answeredQuestions = user.answeredQuestions;
+              }
+              answeredQuestions.push(question.question_id);
+              console.log(user);
+              console.log(answeredQuestions)
+              ApiHelper.setAnsweredQuestions(msg.meta.user_id, answeredQuestions);
+
+            } else {
+              msg.say('Nope, it is not '+ userId + '!')
+              if (user.used_clues < question.clues.length) {
+                console.log(question);
+                console.log(question.clues[user.used_clues]);
+                var clueIndex = user.used_clues+1;
+                msg.say('Clue ' + clueIndex + ' out of 3:');
+                msg.say(question.clues[user.used_clues]);
+                ApiHelper.setCluesNumber(msg.meta.user_id, clueIndex);
+              } else {
+                ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
+                ApiHelper.setCluesNumber(msg.meta.user_id, clueIndex);
+                msg.say('You have no clue left for this question. Type "start" to try guess a new question.');
+              }
+            }
+          }
+        });
+    });
+});
 
 // clue
 slapp.message('^clue', ['direct_message'], (msg) => {
+  // TODO: Protect for unregistered users
   console.log('User asks for a clue.');
   ApiHelper.getUser(msg.meta.user_id)
     .then((user) => {
-      if (user.used_clues < 3) {
+      if (typeof(user.current_question) === 'undefined') {
+        msg.say('_Type "start", to guess a new question._');
+      } else if (user.used_clues <= 0) {
+        msg.say('You need to guess someone to get a clue.')
+      } else if (user.used_clues < 4) {
         ApiHelper.getCurrentQuestion(msg.meta.user_id)
           .then((question) => {
             if (question !== null) {
               console.log(question);
-              console.log(question.clues[user.used_clues]);
-              var clueIndex = user.used_clues+1;
+              console.log(question.clues[user.used_clues - 1]);
+              var clueIndex = user.used_clues;
               msg.say('Clue ' + clueIndex + ' out of 3:');
-              msg.say(question.clues[user.used_clues]);
-              ApiHelper.setCluesNumber(msg.meta.user_id, clueIndex);
+              msg.say(question.clues[user.used_clues - 1]);
             } else {
               msg.say('_Type "start", to guess a new question._');
             }
@@ -140,7 +196,6 @@ slapp.message('^clue', ['direct_message'], (msg) => {
       }
     });
 });
-
 
 // Leaderboard
 slapp.message('^leaderboard', ['direct_message'], (msg) => {
@@ -159,46 +214,17 @@ slapp.message('^leaderboard', ['direct_message'], (msg) => {
   });
 });
 
-// help
-
-slapp.action('register_callback', 'register_answer', (msg, value) => {
-  var registerAnswer = 'Alright, then come back to me when you are ready!;';
-
-  if (value === 'yes') {
-    registerAnswer = 'Awesome here is a question for you:';
-    ApiHelper.createUser(msg.meta.user_id)
-      .then(() => {
-        console.log('USER CREATED');
-        ApiHelper.getRandomQuestion()
-          .then((question) => {
-            console.log('RANDOM QUESTION SELECTED' + question.question_id);
-            ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
-              .then(() => {
-                msg.say(question.question);
-              });
-          });
-      });
-  }
-
-  var responseAnswer = {
-    text: '',
-    attachments: [{
-      fallback: 'Do you want to register ?',
-      title: 'Do you want to join the Akeneo Baby Foot Star League (ABSL) ?',
-      text: registerAnswer,
-      callback_id: 'register_callback',
-      color: '#3AA3E3',
-    }]
-  };
-
-  msg.respond(msg.body.response_url, responseAnswer);
-});
-
 // Question
 slapp.message('^question', ['direct_message'], (msg) => {
+  // TODO: Protect from unregistered users
   ApiHelper.getCurrentQuestion(msg.meta.user_id)
     .then((question) => {
-      msg.say(question.question);
+      if (question !== null) {
+        msg.say('Here is the question you need to answer:');
+        msg.say(question.question);
+      } else {
+        msg.say('_Type "start", to guess a new question._');
+      }
     });
 });
 //
@@ -209,9 +235,11 @@ slapp.message('^question', ['direct_message'], (msg) => {
 //*********************************************
 slapp.message('help', ['mention', 'direct_message'], (msg) => {
   var HELP_TEXT = `
-  Welcome to the Once Upon a time Akeneo quizz !
-  \`help\` - to get some help.
-  \`start\` - to start a quizz
+  Welcome to the Once Upon a time Akeneo quizz ! 
+    **Rules**
+    **Google form**
+    \`help\` - to get some help.
+    \`start\` - to start a quizz
   \`clue\` - to get a clue on your current research
   \`leaderboard\` - Show the leaderboard
   \`question\` - Show the current question
