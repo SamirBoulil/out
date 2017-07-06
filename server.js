@@ -23,7 +23,7 @@ require('beepboop-slapp-presence-polyfill')(slapp, {
 })
 
 // Start
-slapp.message('^.start', ['direct_message'], (msg) => {
+slapp.message('^start', ['direct_message'], (msg) => {
   ApiHelper.isPlayerRegistered(msg.meta.user_id)
     .then((isRegistered) => {
       if (!isRegistered) {
@@ -51,10 +51,9 @@ slapp.message('^.start', ['direct_message'], (msg) => {
           }]
         })
       } else {
+        console.log('About to get a random question');
         ApiHelper.getRandomQuestion()
           .then((question) => {
-            console.log('RANDOM QUESTION SELECTED');
-            console.log(question);
             ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
               .then(() => {
                 msg.say(question.question);
@@ -67,6 +66,58 @@ slapp.message('^.start', ['direct_message'], (msg) => {
     });
 })
 
+// Start
+slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
+  console.log('Answer: ' + userId);
+  ApiHelper.getCurrentQuestion(msg.meta.user_id)
+  .then((question) => {
+    if (question !== null) {
+      if (userId === question.answer_uid) {
+        console.log('Good answer');
+        msg.say('GOOD JOB, here is the explanation:');
+        msg.say(question.description);
+        msg.say('_Type "leaderboard", to see the leaderboard._');
+        ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
+        // TODO: Increment points.
+      } else {
+        msg.say('Nope. _(you can type "clue" to show a hint.)_')
+      }
+    }
+    msg.say('_Or type "start", to try another question._');
+  });
+});
+
+// clue
+slapp.message('^clue', ['direct_message'], (msg) => {
+  console.log('User asks for a clue.');
+  ApiHelper.getUser(msg.meta.user_id)
+    .then((user) => {
+      if (user.used_clues < 3) {
+        ApiHelper.getCurrentQuestion(msg.meta.user_id)
+          .then((question) => {
+            if (question !== null) {
+              console.log(question);
+              console.log(question.clues[user.used_clues]);
+              var clueIndex = user.used_clues+1;
+              msg.say('Clue ' + clueIndex + ' out of 3:');
+              msg.say(question.clues[user.used_clues]);
+              ApiHelper.setCluesNumber(msg.meta.user_id, clueIndex);
+            } else {
+              msg.say('_Type "start", to guess a new question._');
+            }
+          });
+      } else {
+        msg.say('Sorry, no clues left for you. Ask around if you can find the answer.');
+      }
+    });
+});
+
+
+
+
+
+// help
+
 slapp.action('register_callback', 'register_answer', (msg, value) => {
   var registerAnswer = 'Alright, then come back to me when you are ready!;';
 
@@ -77,8 +128,7 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
         console.log('USER CREATED');
         ApiHelper.getRandomQuestion()
           .then((question) => {
-            console.log('RANDOM QUESTION SELECTED');
-            console.log(question);
+            console.log('RANDOM QUESTION SELECTED' + question.question_id);
             ApiHelper.setCurrentQuestion(msg.meta.user_id, question.question_id)
               .then(() => {
                 msg.say(question.question);

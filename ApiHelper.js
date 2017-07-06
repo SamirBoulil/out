@@ -11,6 +11,7 @@ var ApiHelper = (function() {
 
   // User management
   self.getUser = function(userId) {
+    console.log('USER ID:' + userId);
     return axios.get('users/' + userId + '.json')
       .then((response) => {
         return response.data;
@@ -20,6 +21,14 @@ var ApiHelper = (function() {
   self.setCurrentQuestion = function(userId, questionId) {
     return axios.patch('users/' + userId + '.json', {
       "current_question": questionId,
+      "used_clues": 0,
+    });
+  }
+
+  self.setCluesNumber = function(userId, cluesNumber) {
+    console.log('About to update clue number ' + cluesNumber);
+    return axios.patch('users/' + userId + '.json', {
+      "used_clues": cluesNumber,
     });
   }
 
@@ -27,6 +36,7 @@ var ApiHelper = (function() {
     return axios.put('users/' + userId + '.json', {
       "current_question": null,
       "points": 0,
+      "used_clues": 0,
     });
   }
 
@@ -49,9 +59,25 @@ var ApiHelper = (function() {
         var questions = Utils.objectToArray(response.data);
         var question = questions[Math.floor(Math.random() * questions.length)];
 
+        console.log(question);
+
         return question;
       })
   };
+
+  self.getCurrentQuestion = function(userId) {
+    return self.getUser(userId)
+      .then((user) => {
+        if (typeof(user.current_question) !== 'undefined') {
+          return axios.get('questions/' + user.current_question + '.json')
+            .then((response) => {
+              return response.data;
+            });
+        } else {
+          return null;
+        }
+      })
+  }
 
   self.getAnswer = function(playerId) {
     // find user
