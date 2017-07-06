@@ -113,7 +113,7 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
       text: '',
       attachments: [{
         fallback: 'Do you want to register ?',
-        title: "It's okay, come back later if you are ready. Don't forget to press 'start'",
+        title: "Do you want to start the Once Uppon a time quizz ?",
         text: registerAnswer,
         callback_id: 'register_callback',
         color: '#3AA3E3',
