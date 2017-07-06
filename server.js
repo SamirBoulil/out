@@ -8,10 +8,14 @@ const Context = require('slapp-context-beepboop');
 const ApiHelper = require('./ApiHelper');
 
 // TODO:
-// - Dataset/fixtures - In progress
-// - Game mechanics (automatic clue or not ?, number of tries) - In progress
+// - UUID for answers
 // - Wording
-// - Images
+// - Images (Start/congraz) generique ou spécifique
+// - Write rules in the help
+// - user master skill
+//
+// - Game mechanics (automatic clue or not ?, number of tries) - done
+// - Protection - done
 
 // use `PORT` env var on Beep Boop - default to 3000 locally
 var port = process.env.PORT || 3000
@@ -78,7 +82,7 @@ slapp.message('^start', ['direct_message'], (msg) => {
 })
 
 slapp.action('register_callback', 'register_answer', (msg, value) => {
-  var registerAnswer = 'Alright, then come back to me when you are ready!;';
+  var registerAnswer = 'Alright, then come back to me when you are ready!';
 
   if (value === 'yes') {
     registerAnswer = 'Awesome here is a question for you:';
@@ -118,7 +122,6 @@ slapp.action('register_callback', 'register_answer', (msg, value) => {
 
     msg.respond(msg.body.response_url, responseAnswer);
   }
-
 });
 
 // Answer
@@ -131,7 +134,7 @@ slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
         .then((question) => {
           if (question !== null) {
             if (userId === question.answer_uid) {
-              msg.say('*Good answer!* If you want to know the whole story, do not hesitate to have a drink with <@'+ question.answer_uid+ '>!');
+              msg.say('*Good answer!* If you want to know the whole story, do not hesitate to have a drink with '+ question.answer_uid+ '!');
               msg.say('_Type "leaderboard", to see the leaderboard._');
 
               ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
@@ -163,6 +166,8 @@ slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
                 msg.say('You have no clue left for this question. Type "start" to try guess a new question.');
               }
             }
+          } else {
+            msg.say('Type "start" to start playing or "help" to display the rules.');
           }
         });
     });
@@ -170,31 +175,38 @@ slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
 
 // clue
 slapp.message('^clue', ['direct_message'], (msg) => {
-  // TODO: Protect for unregistered users
-  console.log('User asks for a clue.');
-  ApiHelper.getUser(msg.meta.user_id)
-    .then((user) => {
-      if (typeof(user.current_question) === 'undefined') {
-        msg.say('_Type "start", to guess a new question._');
-      } else if (user.used_clues <= 0) {
-        msg.say('You need to guess someone to get a clue.')
-      } else if (user.used_clues < 4) {
-        ApiHelper.getCurrentQuestion(msg.meta.user_id)
-          .then((question) => {
-            if (question !== null) {
-              console.log(question);
-              console.log(question.clues[user.used_clues - 1]);
-              var clueIndex = user.used_clues;
-              msg.say('Clue ' + clueIndex + ' out of 3:');
-              msg.say(question.clues[user.used_clues - 1]);
-            } else {
-              msg.say('_Type "start", to guess a new question._');
-            }
-          });
-      } else {
-        msg.say('Sorry, no clues left for you. Ask around if you can find the answer.');
-      }
-    });
+  ApiHelper.isPlayerRegistered(msg.meta.user_id)
+  .then((isRegistered) => {
+    if (isRegistered) {
+      // TODO: Protect for unregistered users
+      console.log('User asks for a clue.');
+      ApiHelper.getUser(msg.meta.user_id)
+        .then((user) => {
+          if (typeof(user.current_question) === 'undefined') {
+            msg.say('_Type "start", to guess a new question._');
+          } else if (user.used_clues <= 0) {
+            msg.say('You need to guess someone to get a clue.')
+          } else if (user.used_clues < 4) {
+            ApiHelper.getCurrentQuestion(msg.meta.user_id)
+              .then((question) => {
+                if (question !== null) {
+                  console.log(question);
+                  console.log(question.clues[user.used_clues - 1]);
+                  var clueIndex = user.used_clues;
+                  msg.say('Clue ' + clueIndex + ' out of 3:');
+                  msg.say(question.clues[user.used_clues - 1]);
+                } else {
+                  msg.say('_Type "start", to guess a new question._');
+                }
+              });
+          } else {
+            msg.say('Sorry, no clues left for you. Ask around if you can find the answer.');
+          }
+        });
+    } else {
+      msg.say('Type "start" to start playing or "help" to display the rules.');
+    }
+  })
 });
 
 // Leaderboard
@@ -216,16 +228,23 @@ slapp.message('^leaderboard', ['direct_message'], (msg) => {
 
 // Question
 slapp.message('^question', ['direct_message'], (msg) => {
-  // TODO: Protect from unregistered users
-  ApiHelper.getCurrentQuestion(msg.meta.user_id)
-    .then((question) => {
-      if (question !== null) {
-        msg.say('Here is the question you need to answer:');
-        msg.say(question.question);
+  ApiHelper.isPlayerRegistered(msg.meta.user_id)
+    .then((isRegistered) => {
+      if (isRegistered) {
+        ApiHelper.getCurrentQuestion(msg.meta.user_id)
+          .then((question) => {
+            if (question !== null) {
+              msg.say('Here is the question you need to answer:');
+              msg.say(question.question);
+            } else {
+              msg.say('_Type "start", to guess a new question._');
+            }
+          });
       } else {
-        msg.say('_Type "start", to guess a new question._');
+        msg.say('Type "start" to start playing or "help" to display the rules.');
       }
     });
+  //
 });
 //
 
@@ -233,16 +252,16 @@ slapp.message('^question', ['direct_message'], (msg) => {
 //*********************************************
 // Help handler
 //*********************************************
-slapp.message('help', ['mention', 'direct_message'], (msg) => {
+slapp.message('help', ['direct_message'], (msg) => {
   var HELP_TEXT = `
   Welcome to the Once Upon a time Akeneo quizz ! 
-    **Rules**
-    **Google form**
-    \`help\` - to get some help.
-    \`start\` - to start a quizz
+  **Rules**
+  \`help\` - to get some help.
+  \`start\` - to start a quizz
   \`clue\` - to get a clue on your current research
   \`leaderboard\` - Show the leaderboard
   \`question\` - Show the current question
+  *Send out all your cool stories at:* https://docs.google.com/forms/d/e/1FAIpQLSe--h_sbzDQIWosZNstBvaZbvjpO5-PAXpc8lPpkqC7wMkmNQ/viewform
   `;
   msg.say(HELP_TEXT)
 })
