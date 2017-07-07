@@ -134,8 +134,10 @@ slapp.message('^<@([^>]+)>', ['direct_message'], (msg, userId) => {
             ApiHelper.getCurrentQuestion(msg.meta.user_id)
               .then((question) => {
                 if (question !== null) {
+                  console.log('USER : '+ userId);
+                  console.log('answer: '+ question.answer_uid);
                   if (userId === question.answer_uid) {
-                    msg.say('*Good answer!* If you want to know the whole story, do not hesitate to have a drink with the '+ question.master_skill+' '+ question.answer_uid+ '!');
+                    msg.say('*Good answer!* If you want to know the whole story, do not hesitate to have a drink with '+ question.answer_uid+ '! ('+ question.master_skill+')');
                     msg.say('_Type "leaderboard", to see the leaderboard._');
 
                     ApiHelper.setCurrentQuestion(msg.meta.user_id, null);
