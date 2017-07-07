@@ -263,13 +263,14 @@ slapp.message('^question', ['direct_message'], (msg) => {
 slapp.message('help', ['direct_message'], (msg) => {
   var HELP_TEXT = `
   Welcome to the Once Upon a time Akeneo quizz !
-  Some of your colleagues have some awesome stories. Try to guess to whom they happened to !
+  Some of your colleagues have some awesome stories. Guess who!
   \`help\` - If you need any help.
-  \`start\` - I will give you a new story to guess.
+  \`start\` - I will give you a new teaser.
   \`clue\` - Display the last clue I gave you.
   \`question\` - Display the current story.
-  \`leaderboard\` - Who is the Sherlock Holmes ?
-    *Send out all your cool stories at:* https://docs.google.com/forms/d/e/1FAIpQLSe--h_sbzDQIWosZNstBvaZbvjpO5-PAXpc8lPpkqC7wMkmNQ/viewform
+  \`leaderboard\` - Who is our Sherlock Holmes?
+
+  *Send out all your cool stories at:* https://goo.gl/forms/EaYrb6bWkKjHXJ2v2
   `;
   msg.say(HELP_TEXT)
 })
