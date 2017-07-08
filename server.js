@@ -220,9 +220,8 @@ slapp.message('^clue', ['direct_message'], (msg) => {
 // Leaderboard
 slapp.message('^leaderboard', ['direct_message'], (msg) => {
   ApiHelper.getUsers().then((users) => {
-    console.log(users);
     var leaderBoard = users.sort((element1, element2) => {
-      return element1.points < element2.points;
+      return element2.points - element1.points;
     });
 
     var leaderBoard = users.map((element, index) => {
